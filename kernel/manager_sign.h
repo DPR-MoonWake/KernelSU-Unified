@@ -28,6 +28,11 @@
 #define EXPECTED_HASH_NEXT                                                  \
 	"79e590113c4c4c0c222978e413a5faa801666957b1212a328e46c00c69821bf7"
 
+// ShirkNeko/KernelSU
+#define EXPECTED_SIZE_SHIRKNEKO 0x35c
+#define EXPECTED_HASH_SHIRKNEKO                                                \
+	"947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef"
+
 typedef struct {
 	u32 size;
 	const char *sha256;
