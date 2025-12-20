@@ -132,7 +132,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 int ksu_handle_stat(int *dfd, struct filename **filename, int *flags)
 {
 	struct filename *filename_ptr;
-	
+
 	if (!ksu_is_allow_uid_for_current(current_uid().val))
 		return 0;
 	if (unlikely(!filename))
@@ -141,7 +141,7 @@ int ksu_handle_stat(int *dfd, struct filename **filename, int *flags)
 	filename_ptr = *filename;
 	if (IS_ERR(filename_ptr))
 		return 0;
-	if (filename_ptr->name == NULL))
+	if (filename_ptr->name == NULL)
 		return 0;
 	if (likely(memcmp(filename_ptr->name, su, sizeof(su))))
 		return 0;
@@ -173,11 +173,13 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 int ksu_handle_execveat_init(struct filename *filename)
 {
 	if (current->pid != 1 && is_init(get_current_cred())) {
-		if (likely(strstr(filename->name, "/app_process") == NULL && strstr(filename->name, "/adbd") == NULL)) {
-            		pr_info("hook_manager: unmark %d exec %s\n", current->pid, filename->name);
+		if (likely(strstr(filename->name, "/app_process") == NULL &&
+			   strstr(filename->name, "/adbd") == NULL)) {
+			pr_info("hook_manager: unmark %d exec %s\n",
+				current->pid, filename->name);
 			susfs_set_current_proc_umounted();
 		}
-        	return 0;
+		return 0;
 	}
 	return 1;
 }
@@ -210,9 +212,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
 			void *envp, int *flags)
 {
-	if (ksu_handle_execveat_ksud(fd, filename_ptr, argv, envp, flags)) {
-		return 0;
-	}
+	ksu_handle_execveat_init((struct filename *)*filename_ptr);
+	ksu_handle_execveat_ksud(fd, filename_ptr, argv, envp, flags);
 	return ksu_handle_execveat_sucompat(fd, filename_ptr, argv, envp,
 					    flags);
 }
