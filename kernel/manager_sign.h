@@ -33,6 +33,11 @@
 #define EXPECTED_HASH_SHIRKNEKO                                                \
 	"947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef"
 
+// DeepinRain/KernelSU-Next
+#define EXPECTED_SIZE_DPRNEXT 0x0369
+#define EXPECTED_HASH_DPRNEXT                                                \
+	"6d6680bcab29863df9610e187340077226b95dfee6e2fa24ce968853e52a60f8"
+
 typedef struct {
 	u32 size;
 	const char *sha256;
