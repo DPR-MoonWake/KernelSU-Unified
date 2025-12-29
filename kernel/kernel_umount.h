@@ -10,7 +10,6 @@ void ksu_kernel_umount_exit(void);
 
 #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 // Handler function to be called from setresuid hook
-#if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 int ksu_handle_umount(uid_t old_uid, uid_t new_uid);
 #endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
