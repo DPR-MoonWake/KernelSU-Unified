@@ -151,8 +151,8 @@ struct ksu_add_try_umount_cmd {
 #define KSU_IOCTL_ADD_TRY_UMOUNT _IOC(_IOC_WRITE, 'K', 18, 0)
 
 // KernelSU-Next Compatibility command definitions
-#define KSU_IOCTL_GET_HOOK_MODE _IOC(_IOC_READ, 'K', 19, 0)
-#define KSU_IOCTL_GET_VERSION_TAG _IOC(_IOC_READ, 'K', 20, 0)
+#define KSU_IOCTL_GET_HOOK_MODE _IOC(_IOC_READ, 'K', 98, 0)
+#define KSU_IOCTL_GET_VERSION_TAG _IOC(_IOC_READ, 'K', 99, 0)
 
 // SukiSU-Ultra Compatibility command definitions
 #define KSU_IOCTL_GET_FULL_VERSION _IOC(_IOC_READ, 'K', 100, 0)
