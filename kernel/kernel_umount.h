@@ -8,10 +8,11 @@
 void ksu_kernel_umount_init(void);
 void ksu_kernel_umount_exit(void);
 
+#ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 // Handler function to be called from setresuid hook
 #if !defined(CONFIG_KSU_SUSFS) || !defined(CONFIG_KSU_SUSFS_TRY_UMOUNT)
 int ksu_handle_umount(uid_t old_uid, uid_t new_uid);
-#endif
+#endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
 
 // for the umount list
 struct mount_entry {

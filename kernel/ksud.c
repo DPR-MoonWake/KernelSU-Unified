@@ -200,6 +200,8 @@ static inline void handle_second_stage(void)
 	setup_ksu_cred();
 }
 
+extern int ksu_handle_execveat_init(struct filename *filename);
+
 // IMPORTANT NOTE: the call from execve_handler_pre WON'T provided correct value for envp and flags in GKI version
 int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
 			     struct user_arg_ptr *argv,
@@ -226,6 +228,12 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
 	filename = *filename_ptr;
 	if (IS_ERR(filename)) {
 		return 0;
+	}
+
+	if (!ksu_handle_execveat_init(filename)) {
+		// - return non-zero here if ksu_handle_execveat_init() return success
+		//   as we don't want it to execute ksu_handle_execveat_sucompat()
+		return 1;
 	}
 
 	if (unlikely(!memcmp(filename->name, system_bin_init,
@@ -457,7 +465,6 @@ int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
 int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
 			size_t *count_ptr)
 {
-#ifdef CONFIG_KSU_SYSCALL_HOOK
 	struct file *file = fget(fd);
 	if (!file) {
 		return 0;
@@ -465,10 +472,6 @@ int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr,
 	int result = ksu_handle_vfs_read(&file, buf_ptr, count_ptr, NULL);
 	fput(file);
 	return result;
-#else
-	/* Do nothing */
-	return 0;
-#endif
 }
 
 static unsigned int volumedown_pressed_count = 0;
@@ -522,6 +525,7 @@ static void stop_execve_hook(void)
 
 static void stop_input_hook(void)
 {
+	// No need to stop when its already stopped.
 	if (!ksu_input_hook) {
 		return;
 	}

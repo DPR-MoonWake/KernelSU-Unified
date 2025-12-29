@@ -34,7 +34,7 @@ static struct policydb *get_policydb(void)
 }
 
 // Reverting https://github.com/tiann/KernelSU/commit/0b243c24ab6640ea1553c08066a2386456985a0d
-static void __maybe_unused apply_rules_for_manual_hook(struct policydb *db)
+static void apply_rules_for_manual_hook(struct policydb *db)
 {
 	// we need to save allowlist in /data/adb/ksu
 	ksu_allow(db, "kernel", "adb_data_file", "dir", ALL);

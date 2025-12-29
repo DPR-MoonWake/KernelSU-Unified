@@ -12,8 +12,8 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
-#include <linux/uidgid.h>
 #include <linux/stat.h>
+#include <linux/uidgid.h>
 #include <linux/susfs.h>
 
 #include "allowlist.h"
@@ -22,7 +22,6 @@
 #include "klog.h" // IWYU pragma: keep
 #include "manager.h"
 #include "selinux/selinux.h"
-#include "seccomp_cache.h"
 #include "supercalls.h"
 #include "kernel_umount.h"
 #include "kernel_compat.h"
@@ -128,65 +127,44 @@ int ksu_handle_setuid_common(uid_t new_uid, uid_t old_uid, uid_t new_euid)
 		return 0;
 	}
 
-	// We only interest in process spwaned by zygote
-	if (current_cred() && !susfs_is_sid_equal(current_cred()->security,
-		susfs_zygote_sid)) {
+	if (current_cred() &&
+	    !susfs_is_sid_equal(current_cred()->security, susfs_zygote_sid)) {
 		return 0;
 	}
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	// Check if spawned process is isolated service first, and force to do umount if so  
+	// Check if spawned process is isolated service first, and force to do umount if so
 	if (is_zygote_isolated_service_uid(new_uid)) {
 		goto do_umount;
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 
 	if (ksu_get_manager_appid() == new_uid % PER_USER_RANGE) {
-		spin_lock_irq(&current->sighand->siglock);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-		ksu_seccomp_allow_cache(current->seccomp.filter, __NR_reboot);
-#else
 		disable_seccomp();
-#endif
-		spin_unlock_irq(&current->sighand->siglock);
 		pr_info("install fd for manager (uid=%d)\n", new_uid);
 		do_install_manager_fd();
 		return 0;
 	}
 
 	// Check if spawned process is normal user app and needs to be umounted
-	if (likely(is_zygote_normal_app_uid(new_uid) && ksu_uid_should_umount(new_uid))) {
+	if (likely(is_zygote_normal_app_uid(new_uid) &&
+		   ksu_uid_should_umount(new_uid))) {
 		goto do_umount;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
 	if (ksu_is_allow_uid_for_current(new_uid)) {
-		if (current->seccomp.mode == SECCOMP_MODE_FILTER &&
-		    current->seccomp.filter) {
-			spin_lock_irq(&current->sighand->siglock);
-			ksu_seccomp_allow_cache(current->seccomp.filter,
-						__NR_reboot);
-			spin_unlock_irq(&current->sighand->siglock);
-		}
-	}
-#else
-	if (ksu_is_allow_uid_for_current(new_uid)) {
-		spin_lock_irq(&current->sighand->siglock);
 		disable_seccomp();
-		spin_unlock_irq(&current->sighand->siglock);
 	}
-#endif
 
 	return 0;
 
 do_umount:
-	// Handle kernel umount
-#ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
-	ksu_handle_umount(old_uid, new_uid);
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+	susfs_try_umount(new_uid);
 #else
-    susfs_try_umount(new_uid);
-#endif // #ifndef CONFIG_KSU_SUSFS_TRY_UMOUNT
-
+	// Handle kernel umount
+	ksu_handle_umount(old_uid, new_uid);
+#endif // #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	// We can reorder the mnt_id now after all sus mounts are umounted
 	susfs_reorder_mnt_id();
