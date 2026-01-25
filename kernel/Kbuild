@@ -11,7 +11,6 @@ ksu_obj-y += kernel_umount.o
 ksu_obj-y += supercalls.o
 ksu_obj-y += feature.o
 ksu_obj-y += ksud.o
-ksu_obj-y += seccomp_cache.o
 ksu_obj-y += file_wrapper.o
 ksu_obj-y += selinux/selinux.o
 ksu_obj-y += selinux/sepolicy.o
