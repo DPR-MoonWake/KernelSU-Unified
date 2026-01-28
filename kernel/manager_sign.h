@@ -33,6 +33,11 @@
 #define EXPECTED_HASH_SHIRKNEKO                                                \
 	"947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef"
 
+// WildKernels/Wild_KSU
+#define EXPECTED_SIZE_WILD 0x381
+#define EXPECTED_HASH_WILD                                                \
+	"52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4"
+
 typedef struct {
 	u32 size;
 	const char *sha256;
