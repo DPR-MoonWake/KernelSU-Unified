@@ -13,7 +13,6 @@
 #include "supercalls.h"
 #include "sucompat.h"
 #include "setuid_hook.h"
-#include "syscall_handler.h"
 #include "selinux/selinux.h"
 #include "throne_tracker.h"
 
