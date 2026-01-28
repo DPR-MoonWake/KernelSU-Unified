@@ -15,12 +15,4 @@
 #include "setuid_hook.h"
 #include "selinux/selinux.h"
 #include "throne_tracker.h"
-
-#if (defined(CONFIG_KSU_MANUAL_HOOK) &&                                        \
-     LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0))
 #include "lsm_hook.c"
-#elif (defined(CONFIG_KSU_MANUAL_HOOK) &&                                      \
-       LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0))
-// + ksu_handle_setresuid hook for 6.8+
-#include "pkg_observer.c"
-#endif
