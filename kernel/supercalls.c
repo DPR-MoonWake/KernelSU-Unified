@@ -804,41 +804,15 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
 	{ .cmd = 0, .name = NULL, .handler = NULL, .perm_check = NULL }
 };
 
-struct ksu_install_fd_tw {
-	struct callback_head cb;
-	int __user *outp;
-};
-
-static void ksu_install_fd_tw_func(struct callback_head *cb)
+static int ksu_handle_fd_request(void __user *arg)
 {
-	struct ksu_install_fd_tw *tw =
-		container_of(cb, struct ksu_install_fd_tw, cb);
 	int fd = ksu_install_fd();
-
-	if (copy_to_user(tw->outp, &fd, sizeof(fd))) {
+	
+	if (copy_to_user(arg, &fd, sizeof(fd))) {
 		pr_err("install ksu fd reply err\n");
 		do_close_fd(fd);
 	}
-
-	kfree(tw);
-}
-
-static int ksu_handle_fd_request(void __user *arg)
-{
-	struct ksu_install_fd_tw *tw;
-
-	tw = kzalloc(sizeof(*tw), GFP_ATOMIC);
-	if (!tw)
-		return 0;
-
-	tw->outp = (int __user *)arg;
-	tw->cb.func = ksu_install_fd_tw_func;
-
-	if (task_work_add(current, &tw->cb, TWA_RESUME)) {
-		kfree(tw);
-		pr_warn("install fd add task_work failed\n");
-	}
-
+	
 	return 0;
 }
 

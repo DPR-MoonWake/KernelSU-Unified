@@ -5,13 +5,14 @@ ksu_obj-y += apk_sign.o
 ksu_obj-y += sucompat.o
 ksu_obj-y += throne_tracker.o
 ksu_obj-y += setuid_hook.o
-ksu_obj-y += lsm_hook.o
 ksu_obj-y += kernel_compat.o
 ksu_obj-y += kernel_umount.o
 ksu_obj-y += supercalls.o
 ksu_obj-y += feature.o
 ksu_obj-y += ksud.o
 ksu_obj-y += file_wrapper.o
+ksu_obj-y += su_mount_ns.o
+ksu_obj-y += shim.o
 ksu_obj-y += selinux/selinux.o
 ksu_obj-y += selinux/sepolicy.o
 ksu_obj-y += selinux/rules.o
@@ -23,12 +24,51 @@ ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-
 
 obj-$(CONFIG_KSU) += kernelsu.o
 
-KSU_BRANCH=susfs-rksu-master
-KSU_VERSION=32334
+MDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+# Workaround bazel
+# https://github.com/tiann/KernelSU/pull/316#issuecomment-1479043219
+GIT := $(shell PATH="$$PATH":/usr/bin:/usr/local/bin which git)
+
+ifneq ($(GIT),)
+# Check if this is a git repository
+# Try to detect Git repo intelligently
+GIT_ROOT := $(shell cd $(MDIR) && $(GIT) rev-parse --show-toplevel 2>/dev/null)
+ifneq ($(GIT_ROOT),)
+KERNEL_GIT_ROOT := $(shell cd $(srctree) && $(GIT) rev-parse --show-toplevel 2>/dev/null)
+ifneq ($(GIT_ROOT),$(KERNEL_GIT_ROOT))
+# Only set version if it's a different repo from kernel
+$(shell cd $(GIT_ROOT) && [ -f .git/shallow ] && $(GIT) fetch --unshallow 2>/dev/null || true)
+KSU_GIT_VERSION := $(shell cd $(GIT_ROOT) && $(GIT) rev-list --count HEAD 2>/dev/null)
+KSU_GIT_BRANCH := $(shell cd $(GIT_ROOT) && $(GIT) rev-parse --abbrev-ref HEAD 2>/dev/null)
+KSU_GIT_VERSION_VALID := 1
+$(info -- KernelSU: Git repo detected at $(GIT_ROOT))
+endif
+endif
+else
+$(warning -- KernelSU: Git not detected, make sure git is installed in your PATH!)
+endif
+
+# Calculate version if git version is available
+ifdef KSU_GIT_VERSION_VALID
+# ksu_version: major * 10000 + git version + 200 for historical reasons
+$(eval KSU_VERSION=$(shell expr 30000 + $(KSU_GIT_VERSION)))
 $(info -- KernelSU version: $(KSU_VERSION))
-$(info -- KernelSU branch: $(KSU_BRANCH))
+$(info -- KernelSU branch: $(KSU_GIT_BRANCH))
 ccflags-y += -DKSU_VERSION=$(KSU_VERSION)
-ccflags-y += -DKSU_BRANCH=\"$(KSU_BRANCH)\"
+ccflags-y += -DKSU_BRANCH=\"$(KSU_GIT_BRANCH)\"
+else
+# If there is no .git directory, use default version
+$(warning "KSU_GIT_VERSION not defined! It is better to make KernelSU a git repository!")
+ccflags-y += -DKSU_VERSION=32302
+ccflags-y += -DKSU_BRANCH=\"-\"
+endif
+
+# Checks hooks state
+ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
+$(info -- KernelSU: CONFIG_KSU_MANUAL_HOOK)
+ccflags-y += -DCONFIG_KSU_MANUAL_HOOK
+endif
 
 # KernelSU-Next Compatibility
 ccflags-y += -DKSU_NEXT_VERSION_TAG=\"v3.0.0\"
@@ -42,7 +82,7 @@ ccflags-y += -DKSU_COMPAT_HAS_CURRENT_SID
 endif
 
 ifeq ($(shell grep -q "struct selinux_state " $(srctree)/security/selinux/include/security.h; echo $$?),0)
-ccflags-y += -DKSU_COMPAT_HAS_SELINUX_STATE
+ccflags-y += -DKSU_COMPAT_USE_SELINUX_STATE
 endif
 
 # Handle optional backports
@@ -62,6 +102,10 @@ ifeq ($(shell grep -q "int\s\+path_umount" $(srctree)/fs/namespace.c; echo $$?),
 ccflags-y += -DKSU_HAS_PATH_UMOUNT
 endif
 
+ifeq ($(shell grep -q "int\s\+path_mount" $(srctree)/fs/namespace.c; echo $$?),0)
+ccflags-y += -DKSU_HAS_PATH_MOUNT
+endif
+
 ifeq ($(shell grep -q "inode_security_struct\s\+\*selinux_inode" $(srctree)/security/selinux/include/objsec.h; echo $$?),0)
 ccflags-y += -DKSU_OPTIONAL_SELINUX_INODE
 endif
@@ -74,8 +118,15 @@ ifeq ($(shell grep -q "atomic_t\s\+filter_count" $(srctree)/include/linux/seccom
 ccflags-y += -DKSU_OPTIONAL_SECCOMP_FILTER_CNT
 endif
 
-ifeq ($(shell grep -q "anon_inode_getfd_secure" $(srctree)/fs/anon_inodes.c; echo $$?),0)
-ccflags-y += -DKSU_HAS_GETFD_SECURE
+# some old kernel backport this, let's check if put_seccomp_filter still exist
+ifneq ($(shell grep -wq "put_seccomp_filter" $(srctree)/kernel/seccomp.c $(srctree)/include/linux/seccomp.h; echo $$?),0)
+ifeq ($(shell grep -wq "seccomp_filter_release" $(srctree)/kernel/seccomp.c $(srctree)/include/linux/seccomp.h; echo $$?),0)
+ccflags-y += -DKSU_OPTIONAL_SECCOMP_FILTER_RELEASE
+endif
+endif
+
+ifeq ($(shell grep -q "security_inode_init_security_anon" $(srctree)/include/linux/security.h; echo $$?),0)
+ccflags-y += -DKSU_COMPAT_HAS_INIT_SEC_ANON
 endif
 
 # Checks Samsung
@@ -114,5 +165,3 @@ $(info -- SusFS Version: $(SUSFS_VERSION))
 else
 $(error -- You have not integrated susfs in your kernel yet. Read: https://gitlab.com/simonpunk/susfs4ksu)
 endif
-
-# Keep a new line here !! Because someone may append config

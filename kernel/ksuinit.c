@@ -35,13 +35,20 @@ int __init kernelsu_init(void)
 	pr_info("- KSU_BRANCH  = %s\n", KSU_BRANCH);
 
 #ifdef CONFIG_KSU_DEBUG
-	pr_alert("*************************************************************");
-	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-	pr_alert("**                                                         **");
-	pr_alert("**         You are running KernelSU in DEBUG mode          **");
-	pr_alert("**                                                         **");
-	pr_alert("**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
-	pr_alert("*************************************************************");
+	pr_alert(
+		"*************************************************************");
+	pr_alert(
+		"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+	pr_alert(
+		"**                                                         **");
+	pr_alert(
+		"**         You are running KernelSU in DEBUG mode          **");
+	pr_alert(
+		"**                                                         **");
+	pr_alert(
+		"**     NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE    **");
+	pr_alert(
+		"*************************************************************");
 #endif
 
 	ksu_cred = prepare_creds();
@@ -54,6 +61,7 @@ int __init kernelsu_init(void)
 	ksu_supercalls_init();
 
 	ksu_lsm_hook_init();
+#endif
 	ksu_setuid_hook_init();
 	ksu_sucompat_init();
 
