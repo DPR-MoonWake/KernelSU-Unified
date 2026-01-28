@@ -24,7 +24,7 @@
 
 struct cred *ksu_cred;
 
-extern void __init ksu_lsm_hook_init(void);
+// extern void __init ksu_lsm_hook_init(void);
 
 int __init kernelsu_init(void)
 {
@@ -60,7 +60,7 @@ int __init kernelsu_init(void)
 
 	ksu_supercalls_init();
 
-	ksu_lsm_hook_init();
+	// ksu_lsm_hook_init();
 
 	ksu_setuid_hook_init();
 	ksu_sucompat_init();
