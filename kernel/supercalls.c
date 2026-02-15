@@ -396,7 +396,7 @@ static int do_get_wrapper_fd(void __user *arg)
 	// copy original inode mode
 	wrapper_inode->i_mode = file_inode(f)->i_mode;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0) ||                           \
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0) ||                           \
 	defined(KSU_OPTIONAL_SELINUX_INODE)
 	struct inode_security_struct *sec = selinux_inode(wrapper_inode);
 #else
